@@ -1,10 +1,56 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
   const isActive = (path) => location.pathname === path;
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem("token");
+      const userData = localStorage.getItem("user");
+
+      if (token && userData) {
+        try {
+          setUser(JSON.parse(userData));
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    // Check auth on mount
+    checkAuth();
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      checkAuth();
+    };
+
+    window.addEventListener("auth-change", handleAuthChange);
+
+    return () => {
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+
+    // Trigger auth change event to update navbar
+    window.dispatchEvent(new Event("auth-change"));
+
+    navigate("/");
+  };
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: "📊" },
@@ -48,18 +94,41 @@ const Navbar = () => {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-3">
-            <Link
-              to="/login"
-              className="text-gray-600 hover:text-indigo-700 font-medium transition-colors duration-200"
-            >
-              Login
-            </Link>
-            <Link
-              to="/signup"
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              Signup
-            </Link>
+            {user ? (
+              <>
+                <div className="flex items-center space-x-2 text-gray-700">
+                  <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">
+                      {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                    </span>
+                  </div>
+                  <span className="font-medium text-gray-700">
+                    {user.name || "User"}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="text-gray-600 hover:text-indigo-700 font-medium transition-colors duration-200"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  Signup
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -114,20 +183,46 @@ const Navbar = () => {
                 </Link>
               ))}
               <div className="pt-4 space-y-2">
-                <Link
-                  to="/login"
-                  className="block text-gray-600 hover:text-indigo-700 font-medium transition-colors duration-200"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/signup"
-                  className="block bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 text-center"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Get Started
-                </Link>
+                {user ? (
+                  <>
+                    <div className="flex items-center space-x-3 px-3 py-2 bg-gray-50 rounded-lg">
+                      <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                        </span>
+                      </div>
+                      <span className="font-medium text-gray-700 ">
+                        {user.name || "User"}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-all duration-200 text-center"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="block text-gray-600 hover:text-indigo-700 font-medium transition-colors duration-200"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/signup"
+                      className="block bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 text-center"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Get Started
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

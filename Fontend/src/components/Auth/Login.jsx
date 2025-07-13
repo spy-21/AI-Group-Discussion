@@ -45,10 +45,11 @@ const Login = () => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // ✅ Delay navigation to make sure localStorage is ready
-      setTimeout(() => {
-        navigate("/");
-      }, 100);
+      // ✅ Trigger auth change event to update navbar
+      window.dispatchEvent(new Event('auth-change'));
+
+      // ✅ Navigate to dashboard
+      navigate("/");
     } catch (err) {
       setError(err.message);
     } finally {

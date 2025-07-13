@@ -42,6 +42,10 @@ const Signup = () => {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      
+      // Trigger auth change event to update navbar
+      window.dispatchEvent(new Event('auth-change'));
+      
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);

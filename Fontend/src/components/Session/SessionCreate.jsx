@@ -26,14 +26,49 @@ const SessionCreate = () => {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Mock session creation
-    const sessionId = Math.random().toString(36).substring(2, 10);
-    setCreated(true);
-    setSessionLink(window.location.origin + '/session/' + sessionId);
-    setLoading(false);
+    try {
+      // Get user token
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      
+      // Create session with backend
+      const sessionData = {
+        topic: form.topic,
+        description: form.description,
+        category: form.category,
+        date: form.date,
+        time: form.time,
+        duration: form.duration,
+        participantConfig: form.participantConfig,
+        maxParticipants: form.maxParticipants,
+        createdBy: user.id
+      };
+
+      const response = await fetch("http://localhost:5000/api/sessions/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(sessionData)
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create session");
+      }
+
+      const result = await response.json();
+      
+      // Store session data in localStorage for the SessionRoom to access
+      localStorage.setItem(`session_${result.session.id}`, JSON.stringify(sessionData));
+      
+      setCreated(true);
+      setSessionLink(window.location.origin + '/session/' + result.session.id);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error creating session:', error);
+      setLoading(false);
+    }
   };
 
   const getParticipantSummary = () => {

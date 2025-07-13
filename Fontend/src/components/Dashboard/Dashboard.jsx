@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-// Mock data
 const mockUpcoming = [
   {
     id: "1",
@@ -68,10 +67,11 @@ const Dashboard = () => {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-    if (!token || !storedUser) {
-      navigate("/login");
-    } else {
+
+    if (token && storedUser) {
       setUser(JSON.parse(storedUser));
+    } else {
+      navigate("/login");
     }
   }, [navigate]);
 
@@ -109,7 +109,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-8 fade-in">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Welcome back, {user.name}! 👋
@@ -119,12 +118,11 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Upcoming Sessions"
             value={mockUpcoming.length}
-            emoji="📅"
+            emoji="🗕️"
             color="blue"
           />
           <StatCard
@@ -142,21 +140,16 @@ const Dashboard = () => {
           <StatCard title="Avg. Rating" value={4.6} emoji="⭐" color="orange" />
         </div>
 
-        {/* Main Content */}
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Upcoming Sessions */}
           <div className="lg:col-span-2">
             <SessionList sessions={mockUpcoming} formatDate={formatDate} />
           </div>
-
-          {/* Right Column: Profile & Activity */}
           <div className="space-y-6">
             <ProfileCard user={user} />
             <RecentActivity />
           </div>
         </div>
 
-        {/* Past Sessions & Invites */}
         <div className="grid lg:grid-cols-2 gap-8 mt-8">
           <PastSessions sessions={mockPast} />
           <InviteHistory
@@ -168,8 +161,6 @@ const Dashboard = () => {
     </div>
   );
 };
-
-// Reusable Components
 
 const StatCard = ({ title, value, emoji, color }) => (
   <div className="card card-hover p-6">
@@ -232,7 +223,7 @@ const SessionList = ({ sessions, formatDate }) => (
     </div>
     {sessions.length === 0 ? (
       <div className="text-center py-12">
-        <div className="text-6xl mb-4">📅</div>
+        <div className="text-6xl mb-4">🗕️</div>
         <p className="text-gray-500 mb-4">No upcoming sessions scheduled</p>
         <Link to="/session/create" className="btn-primary">
           Schedule Your First Session

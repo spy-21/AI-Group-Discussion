@@ -24,6 +24,7 @@ const SessionRoom = () => {
   const [session, setSession] = useState({
     id: id,
     topic: "Loading...",
+    description: "",
     scheduledTime: "2024-01-15T14:00:00",
     status: "active",
     participants: [],
@@ -47,6 +48,7 @@ const SessionRoom = () => {
   const [liveTranscription, setLiveTranscription] = useState("");
   const [participantFeedback, setParticipantFeedback] = useState({});
   const [showSubtitles, setShowSubtitles] = useState(true);
+  const [showTopicDetails, setShowTopicDetails] = useState(false);
 
   const [transcript, setTranscript] = useState([
     {
@@ -95,14 +97,15 @@ const SessionRoom = () => {
   const [isRecording, setIsRecording] = useState(false);
   const chatRef = useRef(null);
 
-    // Load session data from localStorage
+  // Load session data from localStorage
   useEffect(() => {
     const sessionData = localStorage.getItem(`session_${id}`);
     if (sessionData) {
       const parsedData = JSON.parse(sessionData);
-      setSession(prev => ({
+      setSession((prev) => ({
         ...prev,
         topic: parsedData.topic,
+        description: parsedData.description || "",
         scheduledTime: `${parsedData.date}T${parsedData.time}`,
       }));
     }
@@ -113,7 +116,7 @@ const SessionRoom = () => {
     // Check if user is logged in
     const storedUser = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-    
+
     if (!storedUser || !token) {
       console.log("User not logged in, redirecting to login...");
       window.location.href = "/login";
@@ -123,11 +126,11 @@ const SessionRoom = () => {
     const loggedInUser = JSON.parse(storedUser);
     const newSocket = io("http://localhost:5000");
     const userId = uuidv4();
-    
+
     // Get session data from localStorage
     const sessionData = localStorage.getItem(`session_${id}`);
     const sessionConfig = sessionData ? JSON.parse(sessionData) : null;
-    
+
     const user = {
       id: userId,
       name: loggedInUser.name,
@@ -146,7 +149,7 @@ const SessionRoom = () => {
     newSocket.emit("join-session", {
       sessionId: id,
       user: user,
-      participantConfig: sessionConfig?.participantConfig || "2ai2real"
+      participantConfig: sessionConfig?.participantConfig || "2ai2real",
     });
 
     newSocket.on("session-update", (updatedSession) => {
@@ -204,8 +207,6 @@ const SessionRoom = () => {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [transcript]);
-
-
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -335,8 +336,6 @@ const SessionRoom = () => {
     }, 2000);
   };
 
-
-
   const getSpeakingParticipant = () => {
     return session.participants.find((p) => p.isSpeaking);
   };
@@ -350,8 +349,6 @@ const SessionRoom = () => {
     }, 0);
     return avatars[Math.abs(hash) % avatars.length];
   };
-
-
 
   return (
     <div className="h-screen bg-black flex flex-col">
@@ -387,16 +384,16 @@ const SessionRoom = () => {
           </div>
         </div>
 
-                  <div className="flex items-center space-x-2">
-            {/* Language Selection */}
-            <select
-              value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="px-3 py-1 bg-gray-700 text-gray-300 text-xs rounded hover:bg-gray-600 transition-colors border-none focus:outline-none"
-            >
-              <option value="en-US">🇺🇸 English</option>
-              <option value="hi-IN">🇮🇳 Hindi</option>
-            </select>
+        <div className="flex items-center space-x-2">
+          {/* Language Selection */}
+          <select
+            value={selectedLanguage}
+            onChange={(e) => setSelectedLanguage(e.target.value)}
+            className="px-3 py-1 bg-gray-700 text-gray-300 text-xs rounded hover:bg-gray-600 transition-colors border-none focus:outline-none"
+          >
+            <option value="en-US">🇺🇸 English</option>
+            <option value="hi-IN">🇮🇳 Hindi</option>
+          </select>
 
           {/* Subtitle Toggle */}
           <button
@@ -441,6 +438,9 @@ const SessionRoom = () => {
                   Live Transcription
                 </div>
                 <div className="text-lg font-medium">{liveTranscription}</div>
+                <div className="text-xs text-blue-300 mt-2 border-t border-gray-600 pt-2">
+                  Topic: {session.topic}
+                </div>
               </div>
             </div>
           )}
@@ -455,7 +455,8 @@ const SessionRoom = () => {
                     Waiting for participants to join...
                   </div>
                   <div className="text-gray-400 text-sm mt-2">
-                    You'll see other participants here once they join the session
+                    You'll see other participants here once they join the
+                    session
                   </div>
                 </div>
               </div>
@@ -589,7 +590,12 @@ const SessionRoom = () => {
           {/* Chat/Transcript Area */}
           <div className="flex-1 p-4 flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-white font-semibold">Live Chat</h3>
+              <div>
+                <h3 className="text-white font-semibold">Live Chat</h3>
+                <div className="text-xs text-gray-400 mt-1">
+                  Topic: {session.topic}
+                </div>
+              </div>
               <div className="flex items-center space-x-2">
                 <span className="text-xs text-gray-400">Language:</span>
                 <span className="text-xs text-white font-medium">
@@ -711,6 +717,83 @@ const SessionRoom = () => {
           </div>
         </div>
       </div>
+
+      {/* Topic Details Modal */}
+      {showTopicDetails && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-xl max-w-2xl w-full p-6 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white text-xl font-bold flex items-center">
+                <span className="mr-2">💬</span>
+                Discussion Topic Details
+              </h3>
+              <button
+                onClick={() => setShowTopicDetails(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-white font-semibold mb-2">Topic</h4>
+                <p className="text-gray-300 text-lg">{session.topic}</p>
+              </div>
+
+              {session.description && (
+                <div>
+                  <h4 className="text-white font-semibold mb-2">Description</h4>
+                  <p className="text-gray-300 leading-relaxed">
+                    {session.description}
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Date:</span>
+                  <span className="text-white ml-2">
+                    {session.scheduledTime
+                      ? new Date(session.scheduledTime).toLocaleDateString()
+                      : "Today"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Time:</span>
+                  <span className="text-white ml-2">
+                    {session.scheduledTime
+                      ? new Date(session.scheduledTime).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Now"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Participants:</span>
+                  <span className="text-white ml-2">
+                    {session.participants.length}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Status:</span>
+                  <span className="text-green-400 ml-2">Active</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowTopicDetails(false)}
+                className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hidden Audio Components */}
       <div className="hidden">

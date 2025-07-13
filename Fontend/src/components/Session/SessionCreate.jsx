@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const SessionCreate = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    topic: '',
-    description: '',
-    date: '',
-    time: '',
-    duration: '60',
-    participantConfig: '2ai2real',
-    category: 'Technology',
-    maxParticipants: '4'
+    topic: "",
+    description: "",
+    date: "",
+    time: "",
+    duration: "60",
+    participantConfig: "2ai2real",
+    category: "Technology",
+    maxParticipants: "4",
   });
   const [created, setCreated] = useState(false);
-  const [sessionLink, setSessionLink] = useState('');
+  const [sessionLink, setSessionLink] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -25,12 +25,12 @@ const SessionCreate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       // Get user token
       const token = localStorage.getItem("token");
       const user = JSON.parse(localStorage.getItem("user") || "{}");
-      
+
       // Create session with backend
       const sessionData = {
         topic: form.topic,
@@ -41,42 +41,48 @@ const SessionCreate = () => {
         duration: form.duration,
         participantConfig: form.participantConfig,
         maxParticipants: form.maxParticipants,
-        createdBy: user.id
+        createdBy: user.id,
       };
 
-      const response = await fetch("http://localhost:5000/api/sessions/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(sessionData)
-      });
+      const response = await fetch(
+        "http://localhost:5000/api/sessions/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(sessionData),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to create session");
       }
 
       const result = await response.json();
-      
+
       // Store session data in localStorage for the SessionRoom to access
-      localStorage.setItem(`session_${result.session.id}`, JSON.stringify(sessionData));
-      
+      localStorage.setItem(
+        `session_${result.session.id}`,
+        JSON.stringify(sessionData)
+      );
+
       setCreated(true);
-      setSessionLink(window.location.origin + '/session/' + result.session.id);
+      setSessionLink(window.location.origin + "/session/" + result.session.id);
       setLoading(false);
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error("Error creating session:", error);
       setLoading(false);
     }
   };
 
   const getParticipantSummary = () => {
     const configs = {
-      '2ai2real': { ai: 2, real: 2 },
-      '1ai3real': { ai: 1, real: 3 },
-      '3ai1real': { ai: 3, real: 1 },
-      '4real': { ai: 0, real: 4 }
+      "2ai2real": { ai: 2, real: 2 },
+      "1ai3real": { ai: 1, real: 3 },
+      "3ai1real": { ai: 3, real: 1 },
+      "4real": { ai: 0, real: 4 },
     };
     return configs[form.participantConfig] || { ai: 2, real: 2 };
   };
@@ -84,54 +90,55 @@ const SessionCreate = () => {
   const summary = getParticipantSummary();
 
   const categories = [
-    { value: 'Technology', icon: '💻', color: 'blue' },
-    { value: 'Business', icon: '💼', color: 'green' },
-    { value: 'Healthcare', icon: '🏥', color: 'red' },
-    { value: 'Education', icon: '📚', color: 'purple' },
-    { value: 'Environment', icon: '🌱', color: 'emerald' },
-    { value: 'Politics', icon: '🏛️', color: 'indigo' },
-    { value: 'Science', icon: '🔬', color: 'cyan' },
-    { value: 'Arts', icon: '🎨', color: 'pink' },
-    { value: 'Sports', icon: '⚽', color: 'orange' }
+    { value: "Technology", icon: "💻", color: "blue" },
+    { value: "Business", icon: "💼", color: "green" },
+    { value: "Healthcare", icon: "🏥", color: "red" },
+    { value: "Education", icon: "📚", color: "purple" },
+    { value: "Environment", icon: "🌱", color: "emerald" },
+    { value: "Politics", icon: "🏛️", color: "indigo" },
+    { value: "Science", icon: "🔬", color: "cyan" },
+    { value: "Arts", icon: "🎨", color: "pink" },
+    { value: "Sports", icon: "⚽", color: "orange" },
   ];
 
   const participantConfigs = [
     {
-      value: '2ai2real',
-      title: 'Balanced Discussion',
-      description: '2 AI + 2 Real Users',
-      detail: 'Perfect balance for diverse perspectives',
-      icon: '⚖️'
+      value: "2ai2real",
+      title: "Balanced Discussion",
+      description: "2 AI + 2 Real Users",
+      detail: "Perfect balance for diverse perspectives",
+      icon: "⚖️",
     },
     {
-      value: '1ai3real',
-      title: 'Human-Focused',
-      description: '1 AI + 3 Real Users',
-      detail: 'More human interaction with AI support',
-      icon: '👥'
+      value: "1ai3real",
+      title: "Human-Focused",
+      description: "1 AI + 3 Real Users",
+      detail: "More human interaction with AI support",
+      icon: "👥",
     },
     {
-      value: '3ai1real',
-      title: 'AI-Enhanced',
-      description: '3 AI + 1 Real User',
-      detail: 'Deep AI insights with human guidance',
-      icon: '🤖'
+      value: "3ai1real",
+      title: "AI-Enhanced",
+      description: "3 AI + 1 Real User",
+      detail: "Deep AI insights with human guidance",
+      icon: "🤖",
     },
     {
-      value: '4real',
-      title: 'Human Only',
-      description: '4 Real Users',
-      detail: 'Pure human discussion experience',
-      icon: '👤'
-    }
+      value: "4real",
+      title: "Human Only",
+      description: "4 Real Users",
+      detail: "Pure human discussion experience",
+      icon: "👤",
+    },
   ];
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(sessionLink);
     // Show toast notification
-    const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    toast.textContent = 'Session link copied!';
+    const toast = document.createElement("div");
+    toast.className =
+      "fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50";
+    toast.textContent = "Session link copied!";
     document.body.appendChild(toast);
     setTimeout(() => document.body.removeChild(toast), 2000);
   };
@@ -144,11 +151,17 @@ const SessionCreate = () => {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">✅</span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Session Created!</h2>
-            <p className="text-gray-600 mb-6">Your group discussion session is ready to go.</p>
-            
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Session Created!
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Your group discussion session is ready to go.
+            </p>
+
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <div className="text-sm text-gray-600 mb-2">Share this link with participants:</div>
+              <div className="text-sm text-gray-600 mb-2">
+                Share this link with participants:
+              </div>
               <div className="flex items-center space-x-2">
                 <input
                   type="text"
@@ -167,7 +180,9 @@ const SessionCreate = () => {
 
             <div className="space-y-3">
               <button
-                onClick={() => navigate(`/session/${sessionLink.split('/').pop()}`)}
+                onClick={() =>
+                  navigate(`/session/${sessionLink.split("/").pop()}`)
+                }
                 className="w-full btn-primary"
               >
                 🚀 Join Session Now
@@ -193,8 +208,12 @@ const SessionCreate = () => {
           <div className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold text-2xl">🎤</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Group Discussion</h1>
-          <p className="text-gray-600">Set up a new AI-powered group discussion session</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Create Group Discussion
+          </h1>
+          <p className="text-gray-600">
+            Set up a new AI-powered group discussion session
+          </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -218,19 +237,6 @@ const SessionCreate = () => {
                       placeholder="e.g., Impact of AI on Future Employment"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
-                    </label>
-                    <textarea
-                      name="description"
-                      value={form.description}
-                      onChange={handleChange}
-                      rows={3}
-                      className="input-field resize-none"
-                      placeholder="Brief description of what will be discussed..."
-                    />
-                  </div>
                 </div>
 
                 {/* Category Selection */}
@@ -244,8 +250,8 @@ const SessionCreate = () => {
                         key={category.value}
                         className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
                           form.category === category.value
-                            ? 'border-indigo-500 bg-indigo-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? "border-indigo-500 bg-indigo-50"
+                            : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
                         <input
@@ -258,7 +264,9 @@ const SessionCreate = () => {
                         />
                         <div className="ml-2 text-center">
                           <div className="text-lg">{category.icon}</div>
-                          <div className="text-xs text-gray-600">{category.value}</div>
+                          <div className="text-xs text-gray-600">
+                            {category.value}
+                          </div>
                         </div>
                       </label>
                     ))}
@@ -322,8 +330,8 @@ const SessionCreate = () => {
                         key={config.value}
                         className={`flex items-start p-4 rounded-lg border cursor-pointer transition-all ${
                           form.participantConfig === config.value
-                            ? 'border-indigo-500 bg-indigo-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? "border-indigo-500 bg-indigo-50"
+                            : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
                         <input
@@ -338,11 +346,17 @@ const SessionCreate = () => {
                           <div className="flex items-center space-x-2">
                             <span className="text-lg">{config.icon}</span>
                             <div>
-                              <div className="font-medium text-gray-900">{config.title}</div>
-                              <div className="text-sm text-gray-600">{config.description}</div>
+                              <div className="font-medium text-gray-900">
+                                {config.title}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {config.description}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">{config.detail}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {config.detail}
+                          </div>
                         </div>
                       </label>
                     ))}
@@ -362,7 +376,7 @@ const SessionCreate = () => {
                         Creating Session...
                       </div>
                     ) : (
-                      '🎤 Create Discussion Session'
+                      "🎤 Create Discussion Session"
                     )}
                   </button>
                 </div>
@@ -374,7 +388,9 @@ const SessionCreate = () => {
           <div className="space-y-6">
             {/* Session Summary */}
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Session Summary</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">
+                Session Summary
+              </h3>
               <div className="space-y-4">
                 <div className="text-center p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
                   <div className="text-2xl font-bold text-indigo-600 mb-1">
@@ -382,14 +398,18 @@ const SessionCreate = () => {
                   </div>
                   <div className="text-sm text-gray-600">Participants</div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="text-center p-3 bg-purple-50 rounded-lg">
-                    <div className="text-xl font-bold text-purple-600">{summary.ai}</div>
+                    <div className="text-xl font-bold text-purple-600">
+                      {summary.ai}
+                    </div>
                     <div className="text-xs text-gray-600">AI 🤖</div>
                   </div>
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <div className="text-xl font-bold text-blue-600">{summary.real}</div>
+                    <div className="text-xl font-bold text-blue-600">
+                      {summary.real}
+                    </div>
                     <div className="text-xs text-gray-600">Real 👤</div>
                   </div>
                 </div>
@@ -409,7 +429,9 @@ const SessionCreate = () => {
 
             {/* Tips */}
             <div className="card p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">💡 Tips for Great Discussions</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-3">
+                💡 Tips for Great Discussions
+              </h3>
               <div className="space-y-2 text-sm text-gray-700">
                 <div className="flex items-start space-x-2">
                   <span>🎯</span>
@@ -432,7 +454,9 @@ const SessionCreate = () => {
 
             {/* Quick Actions */}
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">
+                Quick Actions
+              </h3>
               <div className="space-y-2">
                 <button className="w-full text-left p-2 rounded-lg hover:bg-gray-50 transition-colors">
                   📋 View Previous Sessions
@@ -452,4 +476,4 @@ const SessionCreate = () => {
   );
 };
 
-export default SessionCreate; 
+export default SessionCreate;

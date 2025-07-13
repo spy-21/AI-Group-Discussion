@@ -8,7 +8,6 @@ import Profile from "./components/Profile/Profile";
 import SessionCreate from "./components/Session/SessionCreate";
 import SessionRoom from "./components/Session/SessionRoom";
 import FeedbackReport from "./components/Session/FeedbackReport";
-import "./App.css";
 
 function App() {
   return (

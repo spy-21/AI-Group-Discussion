@@ -144,6 +144,10 @@ const SessionRoom = () => {
 
     setCurrentUser(user);
     setSocket(newSocket);
+    
+    // Make socket and sessionId globally accessible for AudioStream
+    window.socket = newSocket;
+    window.sessionId = id;
 
     // Join session with participant configuration
     newSocket.emit("join-session", {
@@ -207,6 +211,64 @@ const SessionRoom = () => {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [transcript]);
+
+  useEffect(() => {
+    if (!socket) return;
+    // AI response handler
+    socket.on("ai-response", (data) => {
+      if (data.audio) {
+        const audioType = data.audioType || 'mp3';
+        const mimeType = audioType === 'wav' ? 'audio/wav' : 'audio/mp3';
+        const audio = new Audio(`data:${mimeType};base64,${data.audio}`);
+        audio.play().catch(e => console.error('AI audio play error:', e));
+      } else {
+        console.warn("No audio data in AI response");
+      }
+      setTranscript((prev) => [
+        ...prev,
+        {
+          speaker: session.participants.find(p => p.id === data.from)?.name || "AI",
+          message: data.message,
+          timestamp: new Date().toLocaleTimeString(),
+          type: "ai",
+          avatar: session.participants.find(p => p.id === data.from)?.avatar || "🤖",
+        },
+      ]);
+    });
+    // System message handler (e.g., AI filling silence)
+    socket.on("system-message", (data) => {
+      setTranscript((prev) => [
+        ...prev,
+        {
+          speaker: "System",
+          message: data.message,
+          timestamp: new Date().toLocaleTimeString(),
+          type: "system",
+          avatar: "💡",
+        },
+      ]);
+    });
+    // Handler for processed user transcriptions
+    socket.on("user-transcription-processed", (data) => {
+      console.log("Transcription processed:", data);
+      setTranscript((prev) => [
+        ...prev,
+        {
+          speaker: data.participantName,
+          message: data.transcription,
+          timestamp: new Date(data.timestamp).toLocaleTimeString(),
+          type: "speech",
+          avatar: session.participants.find(p => p.id === data.from)?.avatar || "👤",
+          triggerType: data.triggerType
+        },
+      ]);
+    });
+    return () => {
+      socket.off("ai-response");
+      socket.off("system-message");
+      socket.off("user-transcription-processed");
+    };
+  }, [socket, session.participants]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);

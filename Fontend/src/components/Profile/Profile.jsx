@@ -87,7 +87,7 @@ const Profile = () => {
       setUser(updatedUser);
       
       setMessage('Profile updated successfully!');
-    } catch (error) {
+    } catch {
       setMessage('Failed to update profile. Please try again.');
     } finally {
       setLoading(false);

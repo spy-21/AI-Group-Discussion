@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 const AudioStream = ({ 
-  sessionId, 
   userId, 
   participants, 
   onAudioData, 
@@ -97,10 +96,21 @@ const AudioStream = ({
       // Handle incoming tracks
       peerConnection.ontrack = (event) => {
         const [stream] = event.streams;
-        if (remoteAudiosRef.current.has(participantId)) {
-          const audioElement = remoteAudiosRef.current.get(participantId);
-          audioElement.srcObject = stream;
+        console.log('Received remote track from:', participantId);
+        
+        // Create audio element if it doesn't exist
+        if (!remoteAudiosRef.current.has(participantId)) {
+          const audioElement = document.createElement('audio');
+          audioElement.autoplay = true;
+          audioElement.controls = false;
+          audioElement.style.display = 'none';
+          document.body.appendChild(audioElement);
+          remoteAudiosRef.current.set(participantId, audioElement);
         }
+        
+        const audioElement = remoteAudiosRef.current.get(participantId);
+        audioElement.srcObject = stream;
+        audioElement.play().catch(console.error);
       };
 
       // Handle ICE candidates
@@ -120,9 +130,19 @@ const AudioStream = ({
       // Handle connection state changes
       peerConnection.onconnectionstatechange = () => {
         console.log(`Connection state with ${participantId}:`, peerConnection.connectionState);
+        if (peerConnection.connectionState === 'connected') {
+          console.log(`✅ Audio connection established with ${participantId}`);
+        } else if (peerConnection.connectionState === 'failed') {
+          console.log(`❌ Audio connection failed with ${participantId}`);
+          // Try to restart the connection
+          setTimeout(() => createOffer(participantId), 1000);
+        }
       };
 
       setPeerConnections(prev => new Map(prev.set(participantId, peerConnection)));
+      
+      // Create offer immediately for new connections
+      setTimeout(() => createOffer(participantId), 100);
 
     } catch (err) {
       console.error('Error creating peer connection:', err);
@@ -137,22 +157,67 @@ const AudioStream = ({
     source.connect(analyser);
 
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    
+    let lastSpeaking = false;
+    let speakingStartTime = null;
+    let listening = true;
+
     const processAudio = () => {
+      if (!listening) return;
       analyser.getByteFrequencyData(dataArray);
-      
+
       // Calculate audio level
       const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
       const normalizedLevel = average / 255;
-      
+
       // Detect speaking
       const isSpeaking = normalizedLevel > 0.1;
-      
-      if (onSpeakingStatus) {
+
+      // Debug: log speaking state and userId
+      console.log('isSpeaking:', isSpeaking, 'lastSpeaking:', lastSpeaking, 'userId:', userId);
+
+      // Only call onSpeakingStatus if state changes
+      if (onSpeakingStatus && isSpeaking !== lastSpeaking) {
         onSpeakingStatus(isSpeaking, normalizedLevel);
+        lastSpeaking = isSpeaking;
+        if (isSpeaking) {
+          speakingStartTime = Date.now();
+        } else {
+          speakingStartTime = null;
+        }
       }
-      
-      // Send audio data for analysis
+
+      // If speaking, check if 10 seconds have passed
+      if (isSpeaking && speakingStartTime && Date.now() - speakingStartTime >= 10000) {
+        // Debug: log before emitting
+        if (!userId) {
+          console.warn('[WARN] userId is missing, cannot emit request-ai-response');
+        } else if (typeof window !== 'undefined' && window.socket && window.sessionId) {
+          console.log("[EMIT] request-ai-response", {
+            sessionId: window.sessionId,
+            message: "(user speaking for 10 seconds)",
+            userId: userId
+          });
+          window.socket.emit("request-ai-response", {
+            sessionId: window.sessionId,
+            message: "(user speaking for 10 seconds)",
+            userId: userId
+          });
+        }
+        // Reset timer to allow repeated requests every 10 seconds
+        speakingStartTime = Date.now();
+      }
+
+      // Send audio data to server for buffering
+      if (window.socket && window.sessionId && userId) {
+        window.socket.emit("audio-data-chunk", {
+          sessionId: window.sessionId,
+          userId: userId,
+          audioData: Array.from(dataArray), // Convert to regular array
+          timestamp: Date.now()
+        });
+      }
+
+      // Send audio data for analysis (optional, for visual feedback)
       if (onAudioData && isSpeaking) {
         onAudioData({
           type: 'audio-data',
@@ -160,10 +225,8 @@ const AudioStream = ({
           timestamp: Date.now()
         });
       }
-      
-      requestAnimationFrame(processAudio);
     };
-    
+
     processAudio();
   };
 
@@ -255,6 +318,27 @@ const AudioStream = ({
     });
   }, [participants]);
 
+  // Start a timer that emits request-ai-response every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (typeof window !== 'undefined' && window.socket && window.sessionId && userId) {
+        console.log("[EMIT] request-ai-response (interval)", {
+          sessionId: window.sessionId,
+          message: "(timer trigger)",
+          userId: userId
+        });
+        window.socket.emit("request-ai-response", {
+          sessionId: window.sessionId,
+          message: "(timer trigger)",
+          userId: userId
+        });
+      } else {
+        console.warn('[WARN] Cannot emit request-ai-response (interval): missing socket, sessionId, or userId');
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [userId]);
+
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -268,6 +352,13 @@ const AudioStream = ({
       </div>
     );
   }
+
+  // Expose signaling handler to parent component
+  useEffect(() => {
+    if (typeof onAudioData === 'function') {
+      onAudioData.handleSignalingMessage = handleSignalingMessage;
+    }
+  }, [onAudioData]);
 
   return (
     <div className="space-y-4">

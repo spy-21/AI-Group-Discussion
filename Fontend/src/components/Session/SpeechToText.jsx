@@ -25,12 +25,16 @@ const SpeechToText = ({
         initializeSpeechRecognition();
       } else {
         setIsSupported(false);
-        setError('Speech recognition is not supported in this browser.');
+        setError('Speech recognition is not supported in this browser. Using backend transcription.');
+        // Fallback to backend transcription
+        if (isActive && isConnected) {
+          startAudioRecording();
+        }
       }
     };
 
     checkSupport();
-  }, []);
+  }, [isActive, isConnected]);
 
   // Initialize speech recognition
   const initializeSpeechRecognition = () => {
@@ -182,7 +186,7 @@ const SpeechToText = ({
       formData.append('audio', audioBlob);
       formData.append('language', language);
       
-      const response = await fetch('/api/ai/transcribe-audio', {
+      const response = await fetch('http://localhost:5000/api/ai/transcribe-audio', {
         method: 'POST',
         body: formData
       });
@@ -198,6 +202,8 @@ const SpeechToText = ({
             isFinal: true
           });
         }
+      } else {
+        console.error('Backend transcription failed:', response.status);
       }
     } catch (err) {
       console.error('Error sending audio to backend:', err);

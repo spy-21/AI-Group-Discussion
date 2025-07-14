@@ -1,18 +1,15 @@
 require('dotenv').config();
-const textToSpeechLib = require('@google-cloud/text-to-speech');
-const util = require('util');
 const fs = require('fs');
 const axios = require('axios');
 const { OpenAI } = require('openai');
-const say = require('say');
 const path = require('path');
 
-// Initialize OpenAI with GPT-4o
+// Initialize OpenAI (for GPT-4o and Whisper)
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 🧠 Get response from ChatGPT-4o
+// 💬 Get response from GPT-4o
 async function getGPT4oResponse(prompt) {
     const chatCompletion = await openai.chat.completions.create({
         model: 'gpt-4o',
@@ -21,33 +18,70 @@ async function getGPT4oResponse(prompt) {
     return chatCompletion.choices[0].message.content;
 }
 
-// 🎙️ Convert text to voice using 'say' (system TTS)
-async function textToSpeech(text, outputFile = null, options = {}) {
-    return new Promise((resolve, reject) => {
-        const tempFile = outputFile || path.join(__dirname, 'output.wav');
-        say.export(text, null, 1.0, tempFile, (err) => {
-            if (err) return reject(err);
-            fs.readFile(tempFile, (err, data) => {
-                if (err) return reject(err);
-                // Optionally delete the temp file after reading
-                fs.unlink(tempFile, () => { });
-                resolve(data);
-            });
-        });
-    });
+// 🎙️ Convert text to speech using ElevenLabs API
+async function textToSpeech(text, voice_id = "EXAVITQu4vr4xnSDxMaL") {
+    try {
+        const response = await axios.post(
+            `https://api.elevenlabs.io/v1/text-to-speech/${voice_id}`,
+            {
+                text: text,
+                voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.75
+                }
+            },
+            {
+                headers: {
+                    "xi-api-key": process.env.ELEVENLABS_API_KEY,
+                    "Content-Type": "application/json"
+                },
+                responseType: "arraybuffer"
+            }
+        );
+
+        return Buffer.from(response.data); // return raw audio buffer
+    } catch (err) {
+        console.error("❌ ElevenLabs TTS error:", err.response?.data || err.message);
+        throw err;
+    }
 }
 
-// 🎯 Convert audio buffer to text using OpenAI Whisper
+// 🔊 Convert audio buffer to WAV format (for Whisper)
+function audioDataToWav(audioData, sampleRate = 48000) {
+    const length = audioData.length;
+    const buffer = Buffer.alloc(44 + length * 2); // WAV header + PCM samples
+
+    // WAV header
+    buffer.write('RIFF', 0);
+    buffer.writeUInt32LE(36 + length * 2, 4);
+    buffer.write('WAVE', 8);
+    buffer.write('fmt ', 12);
+    buffer.writeUInt32LE(16, 16);
+    buffer.writeUInt16LE(1, 20);
+    buffer.writeUInt16LE(1, 22);
+    buffer.writeUInt32LE(sampleRate, 24);
+    buffer.writeUInt32LE(sampleRate * 2, 28);
+    buffer.writeUInt16LE(2, 32);
+    buffer.writeUInt16LE(16, 34);
+    buffer.write('data', 36);
+    buffer.writeUInt32LE(length * 2, 40);
+
+    for (let i = 0; i < length; i++) {
+        const sample = Math.max(-1, Math.min(1, audioData[i] / 255));
+        buffer.writeInt16LE(sample * 0x7FFF, 44 + i * 2);
+    }
+
+    return buffer;
+}
+
+// 📝 Transcribe audio using OpenAI Whisper API
 async function transcribeAudio(audioBuffer, options = {}) {
     try {
-        // Create a temporary file for the audio data
         const tempFilePath = `./temp_audio_${Date.now()}.webm`;
         fs.writeFileSync(tempFilePath, audioBuffer);
 
         const FormData = require('form-data');
         const form = new FormData();
-
-        // Add the audio file to the form
         form.append('file', fs.createReadStream(tempFilePath), {
             filename: 'audio.webm',
             contentType: 'audio/webm'
@@ -65,13 +99,11 @@ async function transcribeAudio(audioBuffer, options = {}) {
                 headers: {
                     'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
                     ...form.getHeaders()
-                },
+                }
             }
         );
 
-        // Clean up temporary file
-        fs.unlinkSync(tempFilePath);
-
+        fs.unlinkSync(tempFilePath); // cleanup
         return {
             success: true,
             text: response.data.text,
@@ -85,35 +117,6 @@ async function transcribeAudio(audioBuffer, options = {}) {
             error: error.message
         };
     }
-}
-
-// 🎨 Convert audio data array to WAV buffer
-function audioDataToWav(audioData, sampleRate = 48000) {
-    const length = audioData.length;
-    const buffer = Buffer.alloc(44 + length * 2); // 44 byte WAV header + 16-bit samples
-
-    // WAV header
-    buffer.write('RIFF', 0);
-    buffer.writeUInt32LE(36 + length * 2, 4);
-    buffer.write('WAVE', 8);
-    buffer.write('fmt ', 12);
-    buffer.writeUInt32LE(16, 16); // PCM format size
-    buffer.writeUInt16LE(1, 20);  // PCM format
-    buffer.writeUInt16LE(1, 22);  // Mono
-    buffer.writeUInt32LE(sampleRate, 24);
-    buffer.writeUInt32LE(sampleRate * 2, 28); // Byte rate
-    buffer.writeUInt16LE(2, 32);  // Block align
-    buffer.writeUInt16LE(16, 34); // Bits per sample
-    buffer.write('data', 36);
-    buffer.writeUInt32LE(length * 2, 40);
-
-    // Convert audio data to 16-bit PCM
-    for (let i = 0; i < length; i++) {
-        const sample = Math.max(-1, Math.min(1, audioData[i] / 255)); // Normalize to [-1, 1]
-        buffer.writeInt16LE(sample * 0x7FFF, 44 + i * 2);
-    }
-
-    return buffer;
 }
 
 module.exports = {

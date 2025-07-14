@@ -4,20 +4,6 @@ import AudioControls from "./AudioControls";
 import AudioStream from "./AudioStream";
 import SpeechToText from "./SpeechToText";
 import { io } from "socket.io-client";
-import { v4 as uuidv4 } from "uuid";
-
-const generateAIParticipants = (count, topic) => {
-  return Array.from({ length: count }).map((_, idx) => ({
-    id: `ai-${uuidv4()}`,
-    name: `AI Bot ${idx + 1}`,
-    avatar: "🤖",
-    type: "ai",
-    isMuted: false,
-    isSpeaking: false,
-    isOnline: true,
-    topic,
-  }));
-};
 
 const SessionRoom = () => {
   const { id } = useParams();
@@ -50,48 +36,7 @@ const SessionRoom = () => {
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [showTopicDetails, setShowTopicDetails] = useState(false);
 
-  const [transcript, setTranscript] = useState([
-    {
-      speaker: "Alice (Host)",
-      message:
-        "Welcome everyone to our discussion on AI and employment. Today we'll explore how artificial intelligence is reshaping the job market.",
-      timestamp: "14:00:05",
-      type: "speech",
-      avatar: "👩‍💼",
-    },
-    {
-      speaker: "AI Assistant - Sarah",
-      message:
-        "Thank you Alice. I believe AI will create more jobs than it eliminates, particularly in new fields we haven't even imagined yet. The key is adaptation and continuous learning.",
-      timestamp: "14:00:15",
-      type: "ai",
-      avatar: "🤖",
-    },
-    {
-      speaker: "Bob",
-      message:
-        "I'm concerned about the transition period though. What about people who lose their jobs? How do we ensure they can retrain and find new opportunities?",
-      timestamp: "14:00:25",
-      type: "speech",
-      avatar: "👨‍💻",
-    },
-    {
-      speaker: "Carol",
-      message:
-        "That's a great point, Bob. I think we need stronger social safety nets and government programs to support workers during these transitions.",
-      timestamp: "14:00:35",
-      type: "speech",
-      avatar: "👩‍🎓",
-    },
-    {
-      speaker: "AI Assistant - Mike",
-      message:
-        "I agree with Carol. We should also consider universal basic income as a potential solution to address job displacement concerns.",
-      timestamp: "14:00:45",
-      type: "ai",
-      avatar: "🤖",
-    },
-  ]);
+  const [transcript, setTranscript] = useState([]);
 
   const [sessionTime, setSessionTime] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -125,7 +70,13 @@ const SessionRoom = () => {
 
     const loggedInUser = JSON.parse(storedUser);
     const newSocket = io("http://localhost:5000");
-    const userId = uuidv4();
+    // Use existing user id from localStorage if available, else generate and store one
+    let userId = loggedInUser.id;
+    if (!userId) {
+      userId = `user-${Math.random().toString(36).substr(2, 9)}`;
+      loggedInUser.id = userId;
+      localStorage.setItem("user", JSON.stringify(loggedInUser));
+    }
 
     // Get session data from localStorage
     const sessionData = localStorage.getItem(`session_${id}`);
@@ -217,21 +168,24 @@ const SessionRoom = () => {
     // AI response handler
     socket.on("ai-response", (data) => {
       if (data.audio) {
-        const audioType = data.audioType || 'mp3';
-        const mimeType = audioType === 'wav' ? 'audio/wav' : 'audio/mp3';
+        const audioType = data.audioType || "mp3";
+        const mimeType = audioType === "wav" ? "audio/wav" : "audio/mp3";
         const audio = new Audio(`data:${mimeType};base64,${data.audio}`);
-        audio.play().catch(e => console.error('AI audio play error:', e));
+        audio.play().catch((e) => console.error("AI audio play error:", e));
       } else {
         console.warn("No audio data in AI response");
       }
       setTranscript((prev) => [
         ...prev,
         {
-          speaker: session.participants.find(p => p.id === data.from)?.name || "AI",
+          speaker:
+            session.participants.find((p) => p.id === data.from)?.name || "AI",
           message: data.message,
           timestamp: new Date().toLocaleTimeString(),
           type: "ai",
-          avatar: session.participants.find(p => p.id === data.from)?.avatar || "🤖",
+          avatar:
+            session.participants.find((p) => p.id === data.from)?.avatar ||
+            "🤖",
         },
       ]);
     });
@@ -258,8 +212,10 @@ const SessionRoom = () => {
           message: data.transcription,
           timestamp: new Date(data.timestamp).toLocaleTimeString(),
           type: "speech",
-          avatar: session.participants.find(p => p.id === data.from)?.avatar || "👤",
-          triggerType: data.triggerType
+          avatar:
+            session.participants.find((p) => p.id === data.from)?.avatar ||
+            "👤",
+          triggerType: data.triggerType,
         },
       ]);
     });
@@ -665,7 +621,10 @@ const SessionRoom = () => {
                 </span>
               </div>
             </div>
-            <div className="flex-1 bg-gray-900 rounded-lg p-3 overflow-y-auto space-y-3">
+            <div
+              ref={chatRef}
+              className="flex-1 bg-gray-900 rounded-lg p-3 overflow-y-auto space-y-3 max-h-[300px] custom-scrollbar"
+            >
               {transcript.map((entry, index) => (
                 <div
                   key={index}

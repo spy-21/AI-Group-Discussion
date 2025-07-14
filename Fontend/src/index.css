@@ -257,3 +257,20 @@ body {
 .connection-indicator.disconnected {
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
 }
+
+/* Custom scrollbar for chat area */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #a78bfa #1e293b;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: #1e293b;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #a78bfa;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
+}

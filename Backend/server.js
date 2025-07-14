@@ -59,19 +59,26 @@ const isProcessingAudio = {};
 const aiConfigs = {
   '2ai2real': { ai: 2, real: 2 },
   '1ai3real': { ai: 1, real: 3 },
-  '3ai1real': { ai: 3, real: 1 },
   '4real': { ai: 0, real: 4 }
 
 };
 
 // AI Participant names and personalities
 const aiPersonalities = [
-  { name: "AI Assistant - Sarah", avatar: "🤖", personality: "analytical", voice_id: "EXAVITQu4vr4xnSDxMaL" }, // Example voice_id
-  { name: "AI Bot - Alex", avatar: "🤖", personality: "creative", voice_id: "21m00Tcm4TlvDq8ikWAM" }, // Example voice_id
-  { name: "AI Helper - Maya", avatar: "🤖", personality: "supportive", voice_id: "AZnzlk1XvdvUeBnXmlld" }, // Example voice_id
-  { name: "AI Expert - Dr. Chen", avatar: "🤖", personality: "technical", voice_id: "ErXwobaYiN019PkySvjV" }, // Example voice_id
-  { name: "AI Moderator - James", avatar: "🤖", personality: "facilitator", voice_id: "MF3mGyEYCl7XYWbV9V6O" } // Example voice_id
+  {
+    name: "AI Specialist - Bella",
+    avatar: "🤖",
+    personality: "supportive", // Friendly and conversational
+    voice_id: "EXAVITQu4vr4xnSDxMaL" // ElevenLabs Female - Bella
+  },
+  {
+    name: "AI Advisor - Adam",
+    avatar: "🤖",
+    personality: "technical", // Focuses on facts and logical points
+    voice_id: "TxGEqnHWrfWFTfGW9XjX" // ElevenLabs Male - Adam
+  }
 ];
+
 
 // Generate AI participants based on configuration
 const generateAIParticipants = (count, topic, sessionId) => {
@@ -227,6 +234,32 @@ async function transcribeAudioData(audioDataArray) {
   }
 }
 
+// Generate AI responses using Gemini API
+
+
+async function generateAIResponse(message, personality = 'analytical', topic = 'General Discussion') {
+  try {
+    const SYSTEM_PROMPT = `You are a helpful AI participant in a group discussion on the topic "${topic}". Your personality is "${personality}". Speak naturally, stay on topic, and keep your replies short (1-3 sentences).`;
+
+    const response = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+      {
+        contents: [{ role: 'user', parts: [{ text: `${SYSTEM_PROMPT}\n\nUser said: "${message}"\nHow would you reply as an AI participant?` }] }]
+      },
+      {
+        params: { key: process.env.GEMINI_API_KEY },
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+
+    const result = response.data.candidates?.[0]?.content?.parts?.[0]?.text;
+    return result || "Interesting point. Let me think about that!";
+  } catch (error) {
+    console.error("❌ AI Generation Error:", error.response?.data || error.message);
+    return "That's a good point. Can you explain more?";
+  }
+}
+
 async function generateAndSendAIResponse(sessionId, transcriptionText, userId) {
   const session = activeSessions[sessionId];
   if (!session) return;
@@ -238,12 +271,12 @@ async function generateAndSendAIResponse(sessionId, transcriptionText, userId) {
   // Select random AI participant
   const randomAI = aiParticipants[Math.floor(Math.random() * aiParticipants.length)];
 
-  // Generate AI response
-  const aiResponse = generateAIResponse(transcriptionText, randomAI.personality);
+  // Generate AI response (now async and includes topic)
+  const aiResponse = await generateAIResponse(transcriptionText, randomAI.personality, session.topic);
 
   try {
     // Generate audio for AI response
-    const audioBuffer = await textToSpeech(aiResponse);
+    const audioBuffer = await textToSpeech(aiResponse, randomAI.voice_id);
     const audioBase64 = audioBuffer.toString('base64');
 
     // Send AI response with audio
@@ -449,13 +482,13 @@ io.on("connection", (socket) => {
         if (aiParticipants.length > 0) {
           const randomAI = aiParticipants[Math.floor(Math.random() * aiParticipants.length)];
           console.log('DEBUG randomAI:', randomAI); // Debug log
-          const aiResponse = generateAIResponse(message, randomAI.personality);
+          const aiResponse = await generateAIResponse(message, randomAI.personality, session.topic);
           console.log('DEBUG aiResponse:', aiResponse); // Debug log
           let audioBase64 = null;
           let audioType = null;
           try {
             // Use 'say' TTS utility
-            const audioBuffer = await textToSpeech(aiResponse);
+            const audioBuffer = await textToSpeech(aiResponse, randomAI.voice_id);
             audioBase64 = audioBuffer.toString('base64');
             // Set audio type to wav
             audioType = 'wav';
@@ -578,45 +611,6 @@ io.on("connection", (socket) => {
     }
   });
 });
-
-// Generate AI responses based on personality
-const generateAIResponse = (message, personality) => {
-  const responses = {
-    analytical: [
-      "That's an interesting point. Let me analyze this from a data-driven perspective...",
-      "From a logical standpoint, I can see several factors at play here...",
-      "This raises some important questions that we should consider systematically...",
-      "Let me break this down into its core components..."
-    ],
-    creative: [
-      "That's a fascinating perspective! What if we looked at this from a completely different angle?",
-      "I love how you're thinking outside the box. Here's a creative approach...",
-      "This reminds me of an innovative solution I've been considering...",
-      "What if we reimagined this problem entirely?"
-    ],
-    supportive: [
-      "That's a great contribution to our discussion! I really appreciate your insight.",
-      "You've made an excellent point. Let me build on that...",
-      "I think you're onto something important here. Let's explore this further...",
-      "Thank you for sharing that perspective. It adds valuable depth to our conversation."
-    ],
-    technical: [
-      "From a technical perspective, there are several important considerations here...",
-      "Let me provide some technical context that might be relevant...",
-      "This touches on some fundamental technical principles...",
-      "From an engineering standpoint, we should consider..."
-    ],
-    facilitator: [
-      "Great discussion point! Let's make sure everyone has a chance to share their thoughts on this.",
-      "This is a key topic. How do others feel about this perspective?",
-      "Let's explore this further. What are the different viewpoints here?",
-      "This is an important aspect of our discussion. Let's dive deeper into this."
-    ]
-  };
-
-  const personalityResponses = responses[personality] || responses.analytical;
-  return personalityResponses[Math.floor(Math.random() * personalityResponses.length)];
-};
 
 // Start server
 const PORT = process.env.PORT || 5000;

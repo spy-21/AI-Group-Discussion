@@ -81,7 +81,7 @@ const SessionCreate = () => {
     const configs = {
       "2ai2real": { ai: 2, real: 2 },
       "1ai3real": { ai: 1, real: 3 },
-      "3ai1real": { ai: 3, real: 1 },
+   
       "4real": { ai: 0, real: 4 },
     };
     return configs[form.participantConfig] || { ai: 2, real: 2 };
@@ -116,13 +116,7 @@ const SessionCreate = () => {
       detail: "More human interaction with AI support",
       icon: "👥",
     },
-    {
-      value: "3ai1real",
-      title: "AI-Enhanced",
-      description: "3 AI + 1 Real User",
-      detail: "Deep AI insights with human guidance",
-      icon: "🤖",
-    },
+   
     {
       value: "4real",
       title: "Human Only",

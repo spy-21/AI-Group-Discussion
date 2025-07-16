@@ -369,7 +369,7 @@ const SessionRoom = () => {
   };
 
   return (
-    <div className="h-screen bg-black flex flex-col">
+    <div className="min-h-screen bg-black flex flex-col">
       {/* Top Header Bar */}
       <div className="bg-black border-b border-gray-700 px-4 py-2 flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -606,8 +606,20 @@ const SessionRoom = () => {
           </div>
 
           {/* Chat/Transcript Area */}
-          <div className="flex-1 p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-3">
+          <div className="flex-1 p-8 flex flex-col max-w-screen-xl mx-auto w-full">
+            {/* AI Feedback Section */}
+            {participantFeedback[currentUser?.id] && (
+              <div className="mb-6">
+                <div className="bg-purple-100 border-l-4 border-purple-500 rounded-xl p-6 flex items-center space-x-4 shadow-md">
+                  <span className="text-3xl">🤖</span>
+                  <div>
+                    <div className="text-lg font-bold text-purple-800 mb-1">AI Feedback</div>
+                    <div className="text-purple-900 text-base">{participantFeedback[currentUser.id]}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="flex items-center justify-between mb-6 sticky top-0 z-10 bg-black py-4">
               <div>
                 <h3 className="text-white font-semibold">Live Chat</h3>
                 <div className="text-xs text-gray-400 mt-1">
@@ -623,7 +635,7 @@ const SessionRoom = () => {
             </div>
             <div
               ref={chatRef}
-              className="flex-1 bg-gray-900 rounded-lg p-3 overflow-y-auto space-y-3 max-h-[300px] custom-scrollbar"
+              className="flex-1 bg-gray-900 rounded-xl p-6 overflow-y-auto space-y-4 max-h-[400px] custom-scrollbar"
             >
               {transcript.map((entry, index) => (
                 <div

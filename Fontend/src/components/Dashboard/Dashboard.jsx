@@ -108,36 +108,14 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-screen-2xl mx-auto py-16 px-6 sm:px-12 lg:px-20">
         <div className="mb-8 fade-in">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-4">
             Welcome back, {user.name}! 👋
           </h1>
           <p className="text-lg text-gray-600">
             Here's what's happening with your AI Group Discussion sessions
           </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="Upcoming Sessions"
-            value={mockUpcoming.length}
-            emoji="🗕️"
-            color="blue"
-          />
-          <StatCard
-            title="Completed Sessions"
-            value={mockPast.length}
-            emoji="✅"
-            color="green"
-          />
-          <StatCard
-            title="Total Participants"
-            value={24}
-            emoji="👥"
-            color="purple"
-          />
-          <StatCard title="Avg. Rating" value={4.6} emoji="⭐" color="orange" />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">

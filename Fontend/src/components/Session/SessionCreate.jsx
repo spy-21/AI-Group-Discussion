@@ -140,8 +140,8 @@ const SessionCreate = () => {
   if (created) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center py-12 px-4">
-        <div className="max-w-md w-full">
-          <div className="card p-8 text-center">
+        <div className="max-w-xl w-full">
+          <div className="card p-12 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">✅</span>
             </div>
@@ -196,9 +196,9 @@ const SessionCreate = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-screen-xl mx-auto py-16 px-6 sm:px-12 lg:px-20">
         {/* Header */}
-        <div className="text-center mb-8 fade-in">
+        <div className="text-center mb-12 fade-in">
           <div className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold text-2xl">🎤</span>
           </div>

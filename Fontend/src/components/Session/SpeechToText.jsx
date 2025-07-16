@@ -238,7 +238,7 @@ const SpeechToText = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4 space-y-4">
+    <div className="bg-white rounded-xl shadow-lg p-8 space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-800">Speech Recognition</h3>
         <div className="flex items-center space-x-2">
@@ -352,4 +352,4 @@ const SpeechToText = ({
   );
 };
 
-export default SpeechToText; 
+export default SpeechToText;

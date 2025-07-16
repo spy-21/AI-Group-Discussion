@@ -361,7 +361,7 @@ const AudioStream = ({
   }, [onAudioData]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {/* Local Audio (hidden) */}
       <audio
         ref={localAudioRef}
@@ -388,7 +388,7 @@ const AudioStream = ({
         ))}
       
       {/* Audio Status */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
         <div className="flex items-center space-x-2">
           <div className={`w-2 h-2 rounded-full ${isInitialized ? 'bg-green-500' : 'bg-yellow-500'}`} />
           <span className="text-sm text-blue-700">
